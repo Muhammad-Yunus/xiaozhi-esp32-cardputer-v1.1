@@ -1,8 +1,6 @@
 # Build script for M5Stack Cardputer v1.1
 # This script ensures CLEAN build every time to prevent configuration issues
 
-$ErrorActionPreference = "Stop"
-
 Write-Host "========================================" -ForegroundColor Cyan
 Write-Host "M5Stack Cardputer v1.1 - Clean Build" -ForegroundColor Cyan
 Write-Host "========================================" -ForegroundColor Cyan
@@ -28,7 +26,7 @@ if (Test-Path "build") {
 # Step 2: Set up ESP-IDF environment
 Write-Host "[2/5] Setting up ESP-IDF environment..." -ForegroundColor Yellow
 $env:IDF_PATH = $idfPath
-& "$idfPath\export.ps1" 2>$null
+& "$idfPath\export.ps1" >$null 2>&1
 
 # Step 3: Verify sdkconfig.defaults has correct settings
 Write-Host "[3/5] Verifying configuration..." -ForegroundColor Yellow
