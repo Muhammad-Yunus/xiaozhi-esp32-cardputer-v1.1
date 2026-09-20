@@ -130,28 +130,63 @@ Since the M5Stack Cardputer v1.1 has NO PSRAM (`CONFIG_SPIRAM=n`):
 
 ## Build System
 
+### ⚠️ CRITICAL: Clean Build Required Every Time
+
+**THE ROOT CAUSE OF ALL ISSUES:** ESP-IDF merges `sdkconfig` (previous build) with `sdkconfig.defaults.*`. If you rebuild without cleaning, OLD configurations override the defaults, causing:
+- Wrong flash size (16MB instead of 8MB)
+- Wrong board type
+- Wrong language (Chinese instead of English)
+
+**SOLUTION: ALWAYS use the build script or manually clean before building.**
+
 ### ESP-IDF Location
 ```
 C:\Users\Asus\esp\v5.5.2\esp-idf
 ```
 
-### Build Commands
+### Method 1: Use Build Script (RECOMMENDED - PREVENTS ALL ISSUES)
 ```powershell
-# Set up ESP-IDF environment
+# Run the automated build script
+.\build-v11.ps1
+```
+
+This script will:
+1. **Automatically delete** old `sdkconfig` and `build/`
+2. **Verify** configuration is correct
+3. **Build** with proper settings
+4. **Verify** output files
+
+### Method 2: Manual Clean Build
+```powershell
+# MUST delete sdkconfig and build before each rebuild!
 $env:IDF_PATH = "C:\Users\Asus\esp\v5.5.2\esp-idf"
 & "$env:IDF_PATH\export.ps1"
-
-# Build for v1.1
+Remove-Item sdkconfig -Force -ErrorAction SilentlyContinue
+Remove-Item build -Recurse -Force -ErrorAction SilentlyContinue
 idf.py set-target esp32s3
-idf.py set-config BOARD_TYPE_M5STACK_CARDPUTER_V11=y
+idf.py build
+```
+
+### ⛔ NEVER Do This (Causes Issues!)
+```powershell
+# WRONG: Rebuilds without cleaning - uses OLD config!
 idf.py build
 
-# Flash
-idf.py -p COMx flash
-
-# Monitor
-idf.py monitor
+# WRONG: Mixing configurations
+idf.py set-config BOARD_TYPE_BREAD_COMPACT_WIFI=y  # Wrong board!
+idf.py build
 ```
+
+### Required Configuration (Verified)
+These settings MUST be present in `sdkconfig.defaults.esp32s3`:
+
+| Setting | Value | Purpose |
+|---------|-------|---------|
+| `CONFIG_ESPTOOLPY_FLASHSIZE_8MB` | `=y` | 8MB flash only (NOT 16MB) |
+| `CONFIG_SPIRAM` | `=n` | No PSRAM on v1.1 |
+| `CONFIG_BOARD_TYPE_M5STACK_CARDPUTER_V11` | `=y` | Correct board type |
+| `CONFIG_LANGUAGE_EN_US` | `=y` | English language |
+| `CONFIG_PARTITION_TABLE_CUSTOM_FILENAME` | `"partitions/v2/8m.csv"` | 8MB partition layout |
 
 ## Flash & Partition Configuration
 
@@ -297,49 +332,14 @@ idf.py monitor
 - [ ] Audio capture/playback works
 - [ ] Display renders correctly
 
-## Build Commands
-
-### ESP-IDF Environment Setup
-```powershell
-# Set up ESP-IDF environment
-$env:IDF_PATH = "C:\Users\Asus\esp\v5.5.2\esp-idf"
-& "$env:IDF_PATH\export.ps1"
-
-# Build for v1.1 (8MB Flash, No PSRAM, English)
-idf.py set-target esp32s3
-idf.py set-config BOARD_TYPE_M5STACK_CARDPUTER_V11=y
-idf.py build
-
-# Flash
-idf.py -p COM14 flash
-
-# Monitor
-idf.py monitor
-```
-
-### ⚠️ Important: Build Command Must Be Separate
-**Problem:** The following command does NOT work:
-```powershell
-cd "C:\D\DOCUMENT_BCK\GitHub\xiaozhi-esp32-cardputer-v1.1" ; $env:IDF_PATH = "C:\Users\Asus\esp\v5.5.2\esp-idf" ; & "$env:IDF_PATH\export.ps1" 2>$null ; idf.py build 2>&1 | Tee-Object -FilePath C:\temp_build_log.txt
-```
-
-**Why it fails:** `export.ps1` modifies the shell environment, but when piped, output stops at "Go to the project directory and run:" message — the build never executes.
-
-**Solution:** Run commands separately:
-```powershell
-$env:IDF_PATH = "C:\Users\Asus\esp\v5.5.2\esp-idf"
-& "$env:IDF_PATH\export.ps1"  # Activate environment first
-idf.py build                 # Then build (without pipe)
-```
-
-## Build Output Status (2026-09-20)
-- xiaozhi.bin: 2.64 MB ✅
-- generated_assets.bin: 1.21 MB ✅
-- ota_data_initial.bin: 0.01 MB ✅
+## Build Output Status (After Clean Build)
+- xiaozhi.bin: ~2.64 MB ✅
+- generated_assets.bin: ~1.21 MB ✅
+- ota_data_initial.bin: ~0.01 MB ✅
 - Build warnings only (no errors): deprecated API, _IO redefined
 - Flash successful via COM14
 
-## Testing Status (2026-09-20)
+## Testing Status (After Clean Build)
 - ✅ Keyboard scanning
 - ✅ Display rendering (English)
 - ✅ Mic capturing voice
