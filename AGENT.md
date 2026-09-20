@@ -278,6 +278,9 @@ idf.py monitor
 ### Completed ✓
 - [x] Compile without errors
 - [x] Flash to device via COM14 (2026-09-20)
+- [x] English language support (config_en.json)
+- [x] Build command working correctly
+- [x] Device response: mic capture works, speaker not working (known issue)
 
 ### Pending ⏳
 - [ ] Keyboard scans all 56 positions
@@ -293,6 +296,59 @@ idf.py monitor
 - [ ] SD card mounts
 - [ ] Audio capture/playback works
 - [ ] Display renders correctly
+
+## Build Commands
+
+### ESP-IDF Environment Setup
+```powershell
+# Set up ESP-IDF environment
+$env:IDF_PATH = "C:\Users\Asus\esp\v5.5.2\esp-idf"
+& "$env:IDF_PATH\export.ps1"
+
+# Build for v1.1 (8MB Flash, No PSRAM, English)
+idf.py set-target esp32s3
+idf.py set-config BOARD_TYPE_M5STACK_CARDPUTER_V11=y
+idf.py build
+
+# Flash
+idf.py -p COM14 flash
+
+# Monitor
+idf.py monitor
+```
+
+### ⚠️ Important: Build Command Must Be Separate
+**Problem:** The following command does NOT work:
+```powershell
+cd "C:\D\DOCUMENT_BCK\GitHub\xiaozhi-esp32-cardputer-v1.1" ; $env:IDF_PATH = "C:\Users\Asus\esp\v5.5.2\esp-idf" ; & "$env:IDF_PATH\export.ps1" 2>$null ; idf.py build 2>&1 | Tee-Object -FilePath C:\temp_build_log.txt
+```
+
+**Why it fails:** `export.ps1` modifies the shell environment, but when piped, output stops at "Go to the project directory and run:" message — the build never executes.
+
+**Solution:** Run commands separately:
+```powershell
+$env:IDF_PATH = "C:\Users\Asus\esp\v5.5.2\esp-idf"
+& "$env:IDF_PATH\export.ps1"  # Activate environment first
+idf.py build                 # Then build (without pipe)
+```
+
+## Build Output Status (2026-09-20)
+- xiaozhi.bin: 2.64 MB ✅
+- generated_assets.bin: 1.21 MB ✅
+- ota_data_initial.bin: 0.01 MB ✅
+- Build warnings only (no errors): deprecated API, _IO redefined
+- Flash successful via COM14
+
+## Testing Status (2026-09-20)
+- ✅ Keyboard scanning
+- ✅ Display rendering (English)
+- ✅ Mic capturing voice
+- ✅ Server responding to voice
+- ✅ Chat responses displayed on screen
+- ❌ Speaker not working (known issue - pending fix)
+
+## Known Issues
+1. **Speaker not working** - Audio playback via I2S speaker (NS4168) is not producing sound. This is a known issue that needs code fix.
 
 ## Notes
 
